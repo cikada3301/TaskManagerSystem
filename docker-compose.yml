@@ -1,31 +1,37 @@
-version: "3.7"
+version: "3.8"
+
 services:
-  api_service:
-    build: .
-    restart: always
-    ports:
-      - 8081:8081
+  taskmanager-db:
+    container_name: taskmanager-db
+    image: mysql:5.7
     networks:
-      - springapimysql-net
+      - taskmanager-network
     environment:
-      - spring.datasource.url=jdbc:mysql://mysqldb:3306/taskmanagerdb
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=taskmanagerdb
+    volumes:
+      - dbvol:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    restart: always
+  app:
+    networks:
+      - taskmanager-network
     depends_on:
-      - mysqldb
-    
+      - taskmanager-db
+    build: .
+    restart: on-failure
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://taskmanager-db:3306/taskmanagerdb?user=root&password=root
+      SPRING_DATASOURCE_PASSWORD: 
     volumes:
       - .m2:/root/.m2
-      
-  mysqldb:
-    image: "mysql:8.0"
-    restart: always
-    ports:
-      - 3306:3306
-    networks:
-      - springapimysql-net  
-    environment:
-      MYSQL_DATABASE: taskmanagerdb
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root
-      MYSQL_ROOT_PASSWORD: root
+
+volumes:
+  dbvol:
+
 networks:
-  springapimysql-net:
+  taskmanager-network:
+    driver: bridge
